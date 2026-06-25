@@ -50,16 +50,27 @@ static int cmd_c(char *args) {
 
 static int cmd_q(char *args) {                       
   return -1;
-}                                
+}          
 
+ /* Commands functions */
 static int cmd_si(char *args) {
   int n = 1;
-  if(args != NULL){
+  if (args != NULL){
     n = atoi(args);
   }
   cpu_exec(n);
   return 0;
 }
+
+static int cmd_info(char *args) {
+  if (strcmp(args , "r")){
+    isa_reg_display();
+  }else if (strcmp(args , "w")){
+
+  }else{}
+  return 0;
+}
+
 
 static int cmd_help(char *args);
 
@@ -74,6 +85,7 @@ static struct {
 
   /* TODO: Add more commands */
   { "si", "Start N commands before stop", cmd_si },
+  { "info", "if enter r,show rigster states;if enter w,show monitoring point information", cmd_info },
 };
 
 #define NR_CMD ARRLEN(cmd_table)
