@@ -20,4 +20,6 @@
 
 word_t expr(char *e, bool *success);
 
+void watchpoint_display(void);
+
 #endif

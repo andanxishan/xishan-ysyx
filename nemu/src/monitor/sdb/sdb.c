@@ -18,6 +18,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "sdb.h"
+#include <memory/paddr.h>
+
 
 static int is_batch_mode = false;
 
@@ -63,14 +65,42 @@ static int cmd_si(char *args) {
 }
 
 static int cmd_info(char *args) {
-  if (strcmp(args , "r")){
+  if (args == NULL) {
+    printf("Usage: info r\n");
+  } else if (strcmp(args , "r") == 0){
     isa_reg_display();
-  }else if (strcmp(args , "w")){
-
-  }else{}
+  } else if (strcmp(args , "w") == 0){
+    watchpoint_display();
+  } else {
+    printf("Unknown info command '%s'\n", args);
+  }
   return 0;
 }
 
+static int cmd_x(char *args) {
+  if (args == NULL) {
+    printf ("Usage: NULL\n");
+  }
+
+  char *n_str = strtok(args , " ");
+  char *expr_str = strtok(NULL,"");
+
+  if (n_str == NULL || expr_str == NULL) {
+    printf ("Usage: N or EXPR NULL");
+  }
+
+  int n = atoi(n_str);
+  
+  paddr_t addr = strtoul(expr_str, NULL, 16);
+
+  for (int i = 0; i < n; i ++) {
+    paddr_t cur = addr + i * 4;
+    word_t data = paddr_read(cur, 4);
+    printf("0x%x: 0x%x\n", cur, data);
+  }
+
+  return 0;
+}
 
 static int cmd_help(char *args);
 
@@ -85,7 +115,9 @@ static struct {
 
   /* TODO: Add more commands */
   { "si", "Start N commands before stop", cmd_si },
-  { "info", "if enter r,show rigster states;if enter w,show monitoring point information", cmd_info },
+  { "info", "If enter r,show rigster states;if enter w,show monitoring point information", cmd_info },
+  { "x", "Examine memory. Warning:EXPR should be hexadecima", cmd_x },
+  { "q", ""}
 };
 
 #define NR_CMD ARRLEN(cmd_table)

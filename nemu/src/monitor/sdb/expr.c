@@ -24,7 +24,7 @@ enum {
   TK_NOTYPE = 256, TK_EQ,
 
   /* TODO: Add more token types */
-
+  TK_NEQ, TK_AND, TK_OR, TK_NUM, TK_HEX, TK_REG
 };
 
 static struct rule {
@@ -36,9 +36,23 @@ static struct rule {
    * Pay attention to the precedence level of different rules.
    */
 
+   //Have done (same):NOTYPE,(NUM,HEX,REG),(EQ,NEQ,OR),(all)
+
   {" +", TK_NOTYPE},    // spaces
-  {"\\+", '+'},         // plus
+  {"0[xX][0-9a-fA-F]+", TK_HEX},
+  {"[0-9]+", TK_NUM},
   {"==", TK_EQ},        // equal
+  {"!=", TK_NEQ},
+  {"&&", TK_AND},
+  {"\\|\\|", TK_OR},
+  {"\\+", '+'},         // plus
+  {"\\-", '-'},
+  {"\\*", '*'},
+  {"\\/", '/'},
+  {"\\(", '('},
+  {"\\)", ')'},
+  {"\\$[a-zA-Z0-9]+", TK_REG},
+
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -95,6 +109,60 @@ static bool make_token(char *e) {
          */
 
         switch (rules[i].token_type) {
+          case TK_NOTYPE:
+            break;
+
+          case TK_NUM:
+            tokens[nr_token].type = TK_NUM;
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0';
+            nr_token++;
+            break;
+          
+          case TK_HEX:
+            tokens[nr_token].type = TK_HEX;
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0';
+            nr_token++;
+            break;
+
+          case TK_REG:
+            tokens[nr_token].type = TK_REG;
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0';
+            nr_token++;
+            break;
+
+          case TK_EQ:
+            tokens[nr_token].type = TK_EQ;
+            nr_token++;
+            break;
+
+          case TK_NEQ:
+            tokens[nr_token].type = TK_NEQ;
+            nr_token++;
+            break;
+
+          case TK_AND:
+            tokens[nr_token].type = TK_AND;
+            nr_token++;
+            break;
+
+          case TK_OR:
+            tokens[nr_token].type = TK_OR;
+            nr_token++;
+            break;
+          
+          case '+':
+          case '-':
+          case '*':
+          case '/':
+          case '(':
+          case ')':
+            tokens[nr_token].type = rules[i].token_type;
+            nr_token++;
+            break;
+
           default: TODO();
         }
 
