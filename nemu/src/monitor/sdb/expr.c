@@ -24,7 +24,7 @@ enum {
   TK_NOTYPE = 256, TK_EQ,
 
   /* TODO: Add more token types */
-  TK_NEQ, TK_AND, TK_OR, TK_NUM, TK_HEX, TK_REG
+  TK_NEQ, TK_AND, TK_OR, TK_NUM, TK_HEX, TK_REG, TK_NEG
 };
 
 static struct rule {
@@ -174,6 +174,25 @@ static bool make_token(char *e) {
     }
   }
 
+  //complete "-x" 
+  i = 0;
+  while (i < nr_token) {
+    if (tokens[i].type == '-' &&(i == 0 ||
+      tokens[i - 1].type == '(' ||
+      tokens[i - 1].type == '+' ||
+      tokens[i - 1].type == '-' ||
+      tokens[i - 1].type == '*' ||
+      tokens[i - 1].type == '/' ||
+      tokens[i - 1].type == TK_NEG ||
+      tokens[i - 1].type == TK_EQ ||
+      tokens[i - 1].type == TK_NEQ ||
+      tokens[i - 1].type == TK_AND ||
+      tokens[i - 1].type == TK_OR)) {
+      tokens[i].type = TK_NEG;
+    } 
+    i++;
+  }
+
   return true;
 }
 
@@ -236,13 +255,13 @@ static int find_main_op(int p,int q) {
       }
     }
   }
-  assert(0);
+  return -1;
 }
 
 word_t eval(int p, int q) {
   int op;
   int val1, val2;
-  char op_type;
+  int op_type;
 
   if (p > q) {
     /* Bad expression */
@@ -270,6 +289,14 @@ word_t eval(int p, int q) {
   else {
     //op = the position of 主运算符 in the token expression;
     op = find_main_op(p, q);
+
+    if (op == -1) {
+      if (tokens[p].type == TK_NEG) {
+        return -eval(p + 1, q);
+      }
+      assert(0);
+    }
+
     op_type = tokens[op].type;
     val1 = eval(p, op - 1);
     val2 = eval(op + 1, q);
