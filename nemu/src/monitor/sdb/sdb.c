@@ -83,10 +83,10 @@ static int cmd_x(char *args) {
   }
 
   char *n_str = strtok(args , " ");
-  char *expr_str = strtok(NULL,"");
+  char *expr_str = strtok(NULL , "");
 
   if (n_str == NULL || expr_str == NULL) {
-    printf ("Usage: N or EXPR NULL");
+    printf ("Usage: N or EXPR NULL\n");
   }
 
   int n = atoi(n_str);
@@ -97,6 +97,25 @@ static int cmd_x(char *args) {
     paddr_t cur = addr + i * 4;
     word_t data = paddr_read(cur, 4);
     printf("0x%x: 0x%x\n", cur, data);
+  }
+
+  return 0;
+}
+
+static int cmd_p(char *args) {
+
+  if (args == NULL) {
+    printf ("Usage: EXPR NULL\n");
+    return 0;
+  } 
+
+  bool success = true;
+  word_t val = expr(args, &success);
+
+  if (success) {
+    printf("%x\n", val);
+  } else {
+    printf("Bad expression\n");
   }
 
   return 0;
@@ -116,8 +135,8 @@ static struct {
   /* TODO: Add more commands */
   { "si", "Start N commands before stop", cmd_si },
   { "info", "If enter r,show rigster states;if enter w,show monitoring point information", cmd_info },
-  { "x", "Examine memory. Warning:EXPR should be hexadecima", cmd_x },
-  { "q", ""}
+  { "x", "Examine memory", cmd_x },
+  { "p", "Expression evaluation", cmd_p }
 };
 
 #define NR_CMD ARRLEN(cmd_table)

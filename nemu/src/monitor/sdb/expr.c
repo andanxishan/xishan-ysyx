@@ -37,7 +37,6 @@ static struct rule {
    */
 
    //Have done (same):NOTYPE,(NUM,HEX,REG),(EQ,NEQ,OR),(all)
-
   {" +", TK_NOTYPE},    // spaces
   {"0[xX][0-9a-fA-F]+", TK_HEX},
   {"[0-9]+", TK_NUM},
@@ -107,7 +106,6 @@ static bool make_token(char *e) {
          * to record the token in the array `tokens'. For certain types
          * of tokens, some extra actions should be performed.
          */
-
         switch (rules[i].token_type) {
           case TK_NOTYPE:
             break;
@@ -179,6 +177,112 @@ static bool make_token(char *e) {
   return true;
 }
 
+static bool check_parentheses(int p, int q) {
+  int i;
+  int depth = 0;
+
+  if (tokens[p].type == '(' && tokens[q].type == ')') {
+    for (i = p; i < q + 1; i ++) {
+      if (tokens[i].type == '(') {
+        depth++;
+      } else if (tokens[i].type == ')') {
+        depth--;
+      }
+      if (depth == 0) {
+        if (i == q){
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+  } 
+
+  return false;
+}
+
+static int find_main_op(int p,int q) {
+  int i;
+  int depth;
+
+  depth = 0;
+  for (i = q; i > p - 1; i --) {
+
+    if (tokens[i].type == '(') {
+      depth--;
+    } 
+    else if (tokens[i].type == ')') {
+      depth++;
+    }
+    if (tokens[i].type == '+' || tokens[i].type == '-') {
+        if (depth == 0) {
+          return i;
+        }
+    }
+  }
+
+  depth = 0;
+  for (i = q; i > p - 1; i --) {
+ 
+    if (tokens[i].type == '(') {
+      depth--;
+    } 
+    else if (tokens[i].type == ')') {
+      depth++;
+    }
+    if (tokens[i].type == '*' || tokens[i].type == '/'){
+      if (depth == 0) {
+        return i;
+      }
+    }
+  }
+  assert(0);
+}
+
+word_t eval(int p, int q) {
+  int op;
+  int val1, val2;
+  char op_type;
+
+  if (p > q) {
+    /* Bad expression */
+    assert(0);
+  }
+  else if (p == q) {
+    /* Single token.
+     * For now this token should be a number.
+     * Return the value of the number.
+     */
+    if (tokens[p].type == TK_NUM) {
+      return atoi(tokens[p].str);
+    } else if (tokens[p].type == TK_HEX) {
+      return strtoul(tokens[p].str, NULL, 16);
+    } else {
+      assert(0);
+    }
+  }
+  else if (check_parentheses(p, q) == true) {
+    /* The expression is surrounded by a matched pair of parentheses.
+     * If that is the case, just throw away the parentheses.
+     */
+    return eval(p + 1, q - 1);
+  }
+  else {
+    //op = the position of 主运算符 in the token expression;
+    op = find_main_op(p, q);
+    op_type = tokens[op].type;
+    val1 = eval(p, op - 1);
+    val2 = eval(op + 1, q);
+
+    switch (op_type) {
+      case '+': return val1 + val2;
+      case '-': return val1 - val2;
+      case '*': return val1 * val2;
+      case '/': return val1 / val2;
+      default: assert(0);
+    }
+  }
+}
 
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
@@ -187,7 +291,7 @@ word_t expr(char *e, bool *success) {
   }
 
   /* TODO: Insert codes to evaluate the expression. */
-  TODO();
-
-  return 0;
+  *success = true;
+  return eval(0, nr_token - 1);
+  
 }
