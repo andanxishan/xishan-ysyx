@@ -31,8 +31,49 @@ static char *code_format =
 "  return 0; "
 "}";
 
+static void gen_expr(int depth) {
+  char num[32];
+  char op_type[] = {'+', '-', '*'};
+  char op[2];
+
+  if (depth > 5) {
+    sprintf(num, "%u", rand() % 100);
+    strcat (buf, num);
+    return;
+  }
+
+  switch (rand() % 4)
+  {
+    case 0:
+      sprintf(num, "%u", rand() % 100);
+      strcat (buf, num);
+      break;
+
+    case 1:
+      gen_expr(depth + 1);
+      op[0] = op_type[rand() % 3];
+      op[1] = '\0';
+      strcat(buf, op);
+      gen_expr(depth + 1);
+      break;
+
+    case 2:
+      strcat(buf, "(");
+      gen_expr(depth + 1);
+      strcat(buf, ")");
+      break;
+
+    case 3:
+      strcat(buf, "-");
+      gen_expr(depth + 1);
+      break;
+
+  }
+}
+
 static void gen_rand_expr() {
   buf[0] = '\0';
+  gen_expr(0);
 }
 
 int main(int argc, char *argv[]) {
