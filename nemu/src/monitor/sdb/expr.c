@@ -14,6 +14,7 @@
 ***************************************************************************************/
 
 #include <isa.h>
+#include <memory/paddr.h>
 
 /* We use the POSIX regex functions to process regular expressions.
  * Type 'man regex' for more information about POSIX regex functions.
@@ -260,7 +261,7 @@ static int find_main_op_judge(int type, int level) {
     case 3: return type == TK_LE || type == TK_GE;
     case 4: return type == '+' || type == '-';
     case 5: return type == '*' || type == '/';
-    default: return assert(0);
+    default: assert(0);
   }
 }
 
@@ -291,6 +292,7 @@ word_t eval(int p, int q) {
   int op;
   int val1, val2;
   int op_type;
+  bool success_reg = true;
 
   if (p > q) {
     /* Bad expression */
@@ -305,6 +307,10 @@ word_t eval(int p, int q) {
       return atoi(tokens[p].str);
     } else if (tokens[p].type == TK_HEX) {
       return strtoul(tokens[p].str, NULL, 16);
+    } else if (tokens[p].type == TK_REG) {
+      word_t val = isa_reg_str2val(tokens[p].str + 1, &success_reg);
+      assert(success_reg);
+      return val;
     } else {
       assert(0);
     }
