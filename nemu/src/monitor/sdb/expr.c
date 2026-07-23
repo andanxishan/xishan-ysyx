@@ -24,7 +24,7 @@ enum {
   TK_NOTYPE = 256, TK_EQ,
 
   /* TODO: Add more token types */
-  TK_NEQ, TK_AND, TK_OR, TK_NUM, TK_HEX, TK_REG, TK_NEG
+  TK_NEQ, TK_AND, TK_OR, TK_NUM, TK_HEX, TK_REG, TK_NEG, TK_DEREF, TK_LE, TK_GE
 };
 
 static struct rule {
@@ -42,6 +42,8 @@ static struct rule {
   {"[0-9]+", TK_NUM},
   {"==", TK_EQ},        // equal
   {"!=", TK_NEQ},
+  {"<=", TK_LE},
+  {">=", TK_GE},
   {"&&", TK_AND},
   {"\\|\\|", TK_OR},
   {"\\+", '+'},         // plus
@@ -131,6 +133,16 @@ static bool make_token(char *e) {
             nr_token++;
             break;
 
+          case TK_OR:
+            tokens[nr_token].type = TK_OR;
+            nr_token++;
+            break;
+          
+          case TK_AND:
+            tokens[nr_token].type = TK_AND;
+            nr_token++;
+            break;
+
           case TK_EQ:
             tokens[nr_token].type = TK_EQ;
             nr_token++;
@@ -141,13 +153,13 @@ static bool make_token(char *e) {
             nr_token++;
             break;
 
-          case TK_AND:
-            tokens[nr_token].type = TK_AND;
+          case TK_LE:
+            tokens[nr_token].type = TK_LE;
             nr_token++;
             break;
 
-          case TK_OR:
-            tokens[nr_token].type = TK_OR;
+          case TK_GE:
+            tokens[nr_token].type = TK_GE;
             nr_token++;
             break;
           
@@ -175,8 +187,7 @@ static bool make_token(char *e) {
   }
 
   //complete "-x" 
-  i = 0;
-  while (i < nr_token) {
+  for (i = 0; i < nr_token; i++) {
     if (tokens[i].type == '-' &&(i == 0 ||
       tokens[i - 1].type == '(' ||
       tokens[i - 1].type == '+' ||
@@ -186,11 +197,32 @@ static bool make_token(char *e) {
       tokens[i - 1].type == TK_NEG ||
       tokens[i - 1].type == TK_EQ ||
       tokens[i - 1].type == TK_NEQ ||
+      tokens[i - 1].type == TK_LE ||
+      tokens[i - 1].type == TK_GE ||
       tokens[i - 1].type == TK_AND ||
       tokens[i - 1].type == TK_OR)) {
       tokens[i].type = TK_NEG;
     } 
-    i++;
+  }
+
+  //complete "*x"
+  for (i =0; i < nr_token; i++) {
+    if (tokens[i].type == '*' &&(i == 0 ||
+      tokens[i - 1].type == '(' ||
+      tokens[i - 1].type == '+' ||
+      tokens[i - 1].type == '-' ||
+      tokens[i - 1].type == '*' ||
+      tokens[i - 1].type == '/' ||
+      tokens[i - 1].type == TK_DEREF ||
+      tokens[i - 1].type == TK_NEG ||
+      tokens[i - 1].type == TK_EQ ||
+      tokens[i - 1].type == TK_NEQ ||
+      tokens[i - 1].type == TK_LE ||
+      tokens[i - 1].type == TK_GE ||
+      tokens[i - 1].type == TK_AND ||
+      tokens[i - 1].type == TK_OR )) {
+      tokens[i].type = TK_DEREF;
+    } 
   }
 
   return true;
@@ -220,37 +252,34 @@ static bool check_parentheses(int p, int q) {
   return false;
 }
 
+static int find_main_op_judge(int type, int level) {
+  switch (level) {
+    case 0: return type == TK_OR;
+    case 1: return type == TK_AND;
+    case 2: return type == TK_EQ || type == TK_NEQ;
+    case 3: return type == TK_LE || type == TK_GE;
+    case 4: return type == '+' || type == '-';
+    case 5: return type == '*' || type == '/';
+    default: return assert(0);
+  }
+}
+
 static int find_main_op(int p,int q) {
   int i;
   int depth;
+  int level;
 
-  depth = 0;
-  for (i = q; i > p - 1; i --) {
+  for (level = 0;level <6; level ++){
+    depth = 0;
+    for (i = q; i > p - 1; i --) {
+      if (tokens[i].type == '(') {
+        depth--;
+      } 
+      else if (tokens[i].type == ')') {
+        depth++;
+      }
 
-    if (tokens[i].type == '(') {
-      depth--;
-    } 
-    else if (tokens[i].type == ')') {
-      depth++;
-    }
-    if (tokens[i].type == '+' || tokens[i].type == '-') {
-        if (depth == 0) {
-          return i;
-        }
-    }
-  }
-
-  depth = 0;
-  for (i = q; i > p - 1; i --) {
- 
-    if (tokens[i].type == '(') {
-      depth--;
-    } 
-    else if (tokens[i].type == ')') {
-      depth++;
-    }
-    if (tokens[i].type == '*' || tokens[i].type == '/'){
-      if (depth == 0) {
+      if (depth == 0 && find_main_op_judge(tokens[i].type, level)) {
         return i;
       }
     }
@@ -294,6 +323,10 @@ word_t eval(int p, int q) {
       if (tokens[p].type == TK_NEG) {
         return -eval(p + 1, q);
       }
+
+      if (tokens[p].type == TK_DEREF) {
+        return paddr_read(eval(p + 1, q), sizeof(word_t));
+      }
       assert(0);
     }
 
@@ -306,6 +339,12 @@ word_t eval(int p, int q) {
       case '-': return val1 - val2;
       case '*': return val1 * val2;
       case '/': return val1 / val2;
+      case TK_EQ:  return val1 == val2;
+      case TK_NEQ: return val1 != val2;
+      case TK_AND: return val1 && val2;
+      case TK_OR:  return val1 || val2;
+      case TK_LE: return val1 <= val2;
+      case TK_GE: return val1 >= val2;
       default: assert(0);
     }
   }

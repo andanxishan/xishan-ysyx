@@ -64,8 +64,9 @@ static void gen_expr(int depth) {
       break;
 
     case 3:
-      strcat(buf, "-");
+      strcat(buf, "(-");
       gen_expr(depth + 1);
+      strcat(buf, ")");
       break;
 
   }
