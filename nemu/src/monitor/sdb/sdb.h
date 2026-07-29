@@ -22,7 +22,6 @@ word_t expr(char *e, bool *success);
 
 void watchpoint_display(void);
 
-WP* new_wp();
-void free_wp(WP *wp);
+void init_wp(char *args, word_t val);
 
 #endif

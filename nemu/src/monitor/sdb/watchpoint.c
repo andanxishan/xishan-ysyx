@@ -22,7 +22,8 @@ typedef struct watchpoint {
   struct watchpoint *next;
 
   /* TODO: Add more members if necessary */
-
+  char expr[128];
+  word_t old_value;
 } WP;
 
 static WP wp_pool[NR_WP] = {};
@@ -67,7 +68,24 @@ void init_wp_pool() {
   free_ = wp_pool;
 }
 
+void init_wp(char *args, word_t val) {
+  WP *wp = new_wp();
+
+  strcpy(wp -> expr, args);
+  wp -> old_value = val;
+
+  printf("New watchpoint: expr = %s, old_value = 0x%x\n", wp -> expr, wp -> old_value);
+}
+
 /* TODO: Implement the functionality of watchpoint */
 void watchpoint_display(void){
-  
+  if(head == NULL) {
+    printf("Watchponit NULL\n");
+  } else {
+    WP *p = head;
+    while(p != NULL) {
+        printf("Watchpoint N: NO = %d, expr = %s, value = 0x%x\n", p -> NO, p -> expr, p -> old_value);
+        p = p -> next;
+    }
+  }
 }

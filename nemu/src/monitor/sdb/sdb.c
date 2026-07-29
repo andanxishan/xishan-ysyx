@@ -121,6 +121,32 @@ static int cmd_p(char *args) {
   return 0;
 }
 
+static int cmd_w(char *args) {
+  if (args == NULL) {
+    printf("Usage: EXPR NULL\n");
+    return 0;
+  }
+
+  bool success = true;
+  word_t val = expr(args, &success);
+
+  if (success) {
+    init_wp(args, val);
+  } else {
+    printf("Bad expression\n");
+  }
+
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  if (args == NULL) {
+    printf("Usage: No NULL\n");
+    return 0;
+  }
+  return 0;
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -136,7 +162,9 @@ static struct {
   { "si", "Start N commands before stop", cmd_si },
   { "info", "If enter r,show rigster states;if enter w,show monitoring point information", cmd_info },
   { "x", "Examine memory", cmd_x },
-  { "p", "Expression evaluation", cmd_p }
+  { "p", "Expression evaluation", cmd_p },
+  { "w", "Setting watchpoint", cmd_w },
+  { "d", "Delete watchpoint", cmd_d}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
