@@ -22,6 +22,7 @@ word_t expr(char *e, bool *success);
 
 void watchpoint_display(void);
 
+void watchpoint_check();
 void init_wp(char *args, word_t val);
 
 #endif

@@ -14,6 +14,7 @@
 ***************************************************************************************/
 
 #include "sdb.h"
+#include <utils.h>
 
 #define NR_WP 32
 
@@ -75,6 +76,24 @@ void init_wp(char *args, word_t val) {
   wp -> old_value = val;
 
   printf("New watchpoint: expr = %s, old_value = 0x%x\n", wp -> expr, wp -> old_value);
+}
+
+void watchpoint_check() {
+  WP *p = head;
+  word_t new_value;
+  while(p != NULL) {
+    bool success = true;
+    new_value = expr(p->expr, &success);
+    if(!success) {
+      printf("Print expression evaluation failed\n");
+    }
+    if(success && new_value != p -> old_value) {
+      printf("Watchpoint N: NO = %d, expr = %s, old_value = 0x%x, new_value = 0x%x\n", p -> NO, p -> expr, p -> old_value, new_value);
+      p->old_value = new_value;
+      nemu_state.state = NEMU_STOP; 
+    }
+    p = p ->next;
+  } 
 }
 
 /* TODO: Implement the functionality of watchpoint */
